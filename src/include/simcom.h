@@ -6,12 +6,9 @@
 #include "simcom/debug.h"
 #include "simcom/net.h"
 #include "simcom/ntp.h"
+#include "simcom/gps.h"
 #include "simcom/socket.h"
 #include <at-command.h>
-
-#if SIM_EN_FEATURE_GPS
-#include "lwgps/lwgps.h"
-#endif
 
 #define SIM_STATUS_ACTIVE           0x01
 #define SIM_STATUS_ROAMING          0x08
@@ -19,24 +16,32 @@
 #define SIM_STATUS_UART_WRITING     0x20
 #define SIM_STATUS_CMD_RUNNING      0x40
 
-#define SIM_STATE_NON_ACTIVE    0x00
-#define SIM_STATE_CHECK_AT      0x01
-#define SIM_STATE_CHECK_SIMCARD 0x02
-#define SIM_STATE_CHECK_NETWORK 0x03
-#define SIM_STATE_ACTIVE        0x04
+enum {
+ SIM_STATE_NON_ACTIVE,
+ SIM_STATE_CHECK_AT,
+ SIM_STATE_CHECK_SIMCARD,
+ SIM_STATE_CHECK_NETWORK,
+ SIM_STATE_ACTIVE,
+};
 
 
 typedef struct SIM_HandlerTypeDef {
   uint32_t            key;
+  AT_HandlerTypeDef   atCmd;
+
   uint8_t             status;
   uint8_t             state;
   uint8_t             events;
   uint8_t             errors;
 
-  uint32_t            setState;
   uint8_t             signal;
 
-  AT_HandlerTypeDef   atCmd;
+  struct {
+    uint32_t init;
+    uint32_t changedState;
+    uint32_t checksignal;
+  } tick;
+
 
   void (*delay)(uint32_t ms);
   uint32_t (*getTick)(void);
@@ -79,21 +84,8 @@ typedef struct SIM_HandlerTypeDef {
   } http;
   #endif
 
-  #if SIM_EN_FEATURE_NET && SIM_EN_FEATURE_MQTT
-  struct {
-    uint8_t status;
-    uint8_t events;
-  } mqtt;
-  #endif
-
   #if SIM_EN_FEATURE_GPS
-  struct {
-    uint8_t   status;
-    uint8_t   events;
-    Buffer_t  buffer;
-    uint8_t   readBuffer[SIM_GPS_TMP_BUF_SIZE];
-    lwgps_t   lwgps;
-  } gps;
+  SIM_GPS_HandlerTypeDef gps;
   #endif
 
   // Buffers
@@ -102,8 +94,6 @@ typedef struct SIM_HandlerTypeDef {
 
   char     cmdBuffer[SIM_CMD_BUFFER_SIZE];
   uint16_t cmdBufferLen;
-
-  uint32_t  initAt;
 } SIM_HandlerTypeDef;
 
 

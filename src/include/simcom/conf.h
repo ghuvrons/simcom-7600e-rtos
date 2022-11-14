@@ -19,7 +19,7 @@
 #endif
 
 #ifndef SIM_EN_FEATURE_NTP
-#define SIM_EN_FEATURE_NTP 1
+#define SIM_EN_FEATURE_NTP 0
 #endif
 
 #ifndef SIM_EN_FEATURE_HTTP

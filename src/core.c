@@ -56,9 +56,6 @@ SIM_Status_t SIM_CheckSIMCard(SIM_HandlerTypeDef *hsim)
   AT_Check(&hsim->atCmd, "+CPIN", 1, &respData);
   if (strncmp(respData.value.string, "READY", 5) == 0) {
     status = SIM_OK;
-    if (hsim->state <= SIM_STATE_CHECK_SIMCARD) {
-      hsim->state = SIM_STATE_CHECK_SIMCARD+1;
-    }
   }
   return status;
 }
@@ -87,7 +84,7 @@ SIM_Status_t SIM_CheckNetwork(SIM_HandlerTypeDef *hsim)
   if (hsim->network_status == 1 || hsim->network_status == 5) {
     status = SIM_OK;
     if (hsim->state <= SIM_STATE_CHECK_NETWORK) {
-      hsim->state = SIM_STATE_CHECK_NETWORK + 1;
+      SIM_SetState(hsim, SIM_STATE_ACTIVE);
     }
     if (hsim->network_status == 5)
       SIM_SET_STATUS(hsim, SIM_STATUS_ROAMING);
@@ -153,6 +150,19 @@ SIM_Status_t SIM_GetTime(SIM_HandlerTypeDef *hsim, SIM_Datetime_t *dt)
   return SIM_OK;
 }
 
+
+SIM_Status_t SIM_CheckSugnal(SIM_HandlerTypeDef *hsim)
+{
+  AT_Data_t respData[2] = {
+    AT_Number(0),
+    AT_Number(0),
+  };
+
+  if (AT_Command(&hsim->atCmd, "+CSQ", 0, 0, 2, respData) != AT_OK) return SIM_ERROR;
+  hsim->signal = respData[1].value.number;
+
+  return SIM_OK;
+}
 
 
 static void str2Time(SIM_Datetime_t *dt, const char *str)

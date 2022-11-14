@@ -22,16 +22,9 @@ SIM_Status_t SIM_NET_Init(SIM_NET_HandlerTypeDef *hsimnet, void *hsim)
   hsimnet->status       = 0;
   hsimnet->events       = 0;
   hsimnet->gprs_status  = 0;
-  hsimnet->state        = hsimnet->setState = SIM_NET_STATE_NON_ACTIVE;
+  hsimnet->state        = SIM_NET_STATE_NON_ACTIVE;
 
   return SIM_OK;
-}
-
-
-void SIM_NET_SetState(SIM_NET_HandlerTypeDef *hsimnet, uint8_t newState)
-{
-  hsimnet->setState = newState;
-  ((SIM_HandlerTypeDef*) hsimnet->hsim)->rtos.eventSet(SIM_RTOS_EVT_NET_NEW_STATE);
 }
 
 
@@ -47,58 +40,70 @@ void SIM_NET_SetupAPN(SIM_NET_HandlerTypeDef *hsimnet, char *APN, char *user, ch
     hsimnet->APN.pass = pass;
 }
 
-SIM_Status_t SIM_NET_CheckState(SIM_NET_HandlerTypeDef *hsimnet)
+
+void SIM_NET_SetState(SIM_NET_HandlerTypeDef *hsimnet, uint8_t newState)
+{
+  hsimnet->state = newState;
+  ((SIM_HandlerTypeDef*) hsimnet->hsim)->rtos.eventSet(SIM_RTOS_EVT_NET_NEW_STATE);
+}
+
+
+void SIM_NET_OnNewState(SIM_NET_HandlerTypeDef *hsimnet)
 {
   SIM_HandlerTypeDef *hsim = hsimnet->hsim;
 
-  if (hsimnet->state == hsimnet->setState) return SIM_OK;
+  hsimnet->stateTick = hsim->getTick();
 
   switch (hsimnet->state) {
-  case SIM_NET_STATE_NON_ACTIVE:
   case SIM_NET_STATE_SETUP_APN:
     if (hsimnet->APN.APN != NULL) {
-      if (SIM_NET_SetAPN(hsimnet,
-                         hsimnet->APN.APN,
-                         hsimnet->APN.user,
-                         hsimnet->APN.pass) != SIM_OK)
+      if (SIM_NET_SetAPN(hsimnet) == SIM_OK)
       {
-        SIM_Debug("Checking GPRS...");
+        SIM_Debug("APS was set");
       }
-    } else {
-      hsimnet->state += 1;
     }
+    SIM_NET_SetState(hsimnet, SIM_NET_STATE_CHECK_GPRS);
     break;
 
   case SIM_NET_STATE_CHECK_GPRS:
+    if (!SIM_IS_STATUS(hsimnet, SIM_NET_STATUS_APN_WAS_SET)) {
+      SIM_NET_SetState(hsimnet, SIM_NET_STATE_SETUP_APN);
+      break;
+    }
     SIM_Debug("Checking GPRS...");
     if (SIM_NET_GPRS_Check(hsimnet) == SIM_OK) {
       SIM_Debug("GPRS registered%s", (hsimnet->gprs_status == 5)? " (roaming)":"");
     }
     else if (hsimnet->gprs_status == 0) {
-      hsimnet->state = SIM_NET_STATE_SETUP_APN;
-      return SIM_ERROR;
+      SIM_NET_SetState(hsimnet, SIM_NET_STATE_SETUP_APN);
     }
     else if (hsim->network_status == 2) {
       SIM_Debug("GPRS Registering....");
-      return SIM_ERROR;
-    } else {
-      return SIM_ERROR;
     }
     break;
 
   default: break;
   }
 
-  if (hsimnet->state != hsimnet->setState) {
-    hsim->rtos.eventSet(SIM_RTOS_EVT_NET_NEW_STATE);
-    return SIM_ERROR;
+  return;
+}
+
+
+void SIM_NET_Loop(SIM_NET_HandlerTypeDef *hsimnet)
+{
+  SIM_HandlerTypeDef *hsim = hsimnet->hsim;
+
+  switch (hsimnet->state) {
+  case SIM_NET_STATE_CHECK_GPRS:
+    if (SIM_IsTimeout(hsim, hsimnet->stateTick, 2000)) {
+      SIM_NET_SetState(hsimnet, SIM_NET_STATE_CHECK_GPRS);
+    }
+    break;
+
+  default: break;
   }
 
-  if (hsimnet->state == SIM_NET_STATE_ONLINE) {
-    hsim->rtos.eventSet(SIM_RTOS_EVT_NET_ONLINE);
-  }
-
-  return SIM_OK;
+  return;
 }
 
 
@@ -127,7 +132,7 @@ SIM_Status_t SIM_NET_GPRS_Check(SIM_NET_HandlerTypeDef *hsimnet)
   if (hsimnet->gprs_status == 1 || hsimnet->gprs_status == 5) {
     status = SIM_OK;
     if (hsimnet->state <= SIM_NET_STATE_CHECK_GPRS) {
-      hsimnet->state = SIM_NET_STATE_CHECK_GPRS+1;
+      SIM_NET_SetState(hsimnet, SIM_NET_STATE_ONLINE);
     }
     if (hsimnet->gprs_status == 5)
       SIM_SET_STATUS(hsimnet, SIM_NET_STATUS_GPRS_ROAMING);
@@ -142,11 +147,13 @@ SIM_Status_t SIM_NET_GPRS_Check(SIM_NET_HandlerTypeDef *hsimnet)
 }
 
 
-SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet,
-                            char *APN, char *user, char *pass)
+SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet)
 {
   SIM_HandlerTypeDef *hsim = hsimnet->hsim;
   SIM_Status_t status = SIM_ERROR;
+  char *APN = hsimnet->APN.APN;
+  char *user = hsimnet->APN.user;
+  char *pass = hsimnet->APN.pass;
   uint8_t cid = 1;
   AT_Data_t paramData[4] = {
     AT_Number(cid),
@@ -174,7 +181,6 @@ SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet,
   }
 
   SIM_SET_STATUS(hsimnet, SIM_NET_STATUS_APN_WAS_SET);
-  hsimnet->state = SIM_NET_STATE_SETUP_APN+1;
   status = SIM_OK;
 
 endCmd:

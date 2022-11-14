@@ -14,7 +14,8 @@
 
 #define IS_EVENT(evt_notif, evt_wait) SIM_BITS_IS(evt_notif, evt_wait)
 
-static SIM_Status_t checkState(SIM_HandlerTypeDef*);
+static void onNewState(SIM_HandlerTypeDef*);
+static void loop(SIM_HandlerTypeDef*);
 static void onReady(void *app, AT_Data_t*);
 
 
@@ -50,6 +51,8 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
   SIM_NTP_Init(&hsim->ntp, hsim);
   SIM_SockManager_Init(&hsim->socketManager, hsim);
 
+  hsim->tick.init = hsim->getTick();
+
   return SIM_OK;
 }
 
@@ -66,38 +69,55 @@ void SIM_Thread_Run(SIM_HandlerTypeDef *hsim)
 
       }
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_NEW_STATE)) {
-        checkState(hsim);
+        onNewState(hsim);
       }
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_ACTIVED)) {
-        SIM_NET_SetState(&hsim->net, SIM_NET_STATE_ONLINE);
+#if SIM_EN_FEATURE_NET
+        SIM_NET_SetState(&hsim->net, SIM_NET_STATE_CHECK_GPRS);
+#endif /* SIM_EN_FEATURE_NET */
       }
+
+#if SIM_EN_FEATURE_NET
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_NET_NEW_STATE)) {
-        SIM_NET_CheckState(&hsim->net);
+        SIM_NET_OnNewState(&hsim->net);
       }
-      if (IS_EVENT(notifEvent, SIM_RTOS_EVT_NET_ONLINE)) {
-      }
+#endif /* SIM_EN_FEATURE_NET */
+
+#if SIM_EN_FEATURE_SOCKET
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_SOCKMGR_NEW_STATE)) {
         SIM_SockManager_OnNewState(&hsim->socketManager);
       }
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_SOCKCLIENT_NEW_EVT)) {
         SIM_SockManager_CheckSocketsEvents(&hsim->socketManager);
       }
+#endif /* SIM_EN_FEATURE_SOCKET */
+
+#if SIM_EN_FEATURE_NTP
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_NTP_SYNCED)) {
         SIM_NTP_OnSynced(&hsim->ntp);
       }
       goto next;
     }
+#endif /* SIM_EN_FEATURE_NTP */
 
     lastTO = hsim->getTick();
+    loop(hsim);
 
-    checkState(hsim);
-    SIM_NET_CheckState(&hsim->net);
+#if SIM_EN_FEATURE_NET
+    SIM_NET_Loop(&hsim->net);
+#endif /* SIM_EN_FEATURE_NET */
+
+#if SIM_EN_FEATURE_SOCKET
     SIM_SockManager_Loop(&hsim->socketManager);
+#endif /* SIM_EN_FEATURE_SOCKET */
+
+#if SIM_EN_FEATURE_NTP
     SIM_NTP_Loop(&hsim->ntp);
+#endif /* SIM_EN_FEATURE_NTP */
 
   next:
-    timeout = 2000 - (hsim->getTick() - lastTO);
-    if (timeout > 2000) timeout = 1;
+    timeout = 1000 - (hsim->getTick() - lastTO);
+    if (timeout > 1000) timeout = 1;
   }
 }
 
@@ -110,30 +130,30 @@ void SIM_Thread_ATCHandler(SIM_HandlerTypeDef *hsim)
 
 void SIM_SetState(SIM_HandlerTypeDef *hsim, uint8_t newState)
 {
-  hsim->setState = newState;
+  hsim->state = newState;
   hsim->rtos.eventSet(SIM_RTOS_EVT_NEW_STATE);
 }
 
-static SIM_Status_t checkState(SIM_HandlerTypeDef *hsim)
+static void onNewState(SIM_HandlerTypeDef *hsim)
 {
-  // if simcom not active yet
-  if (hsim->state == hsim->setState) return SIM_OK;
+  hsim->tick.changedState = hsim->getTick();
 
   switch (hsim->state) {
   case SIM_STATE_NON_ACTIVE:
   case SIM_STATE_CHECK_AT:
-    if (SIM_CheckAT(hsim) != SIM_OK) {
-      return SIM_ERROR;
+    if (SIM_CheckAT(hsim) == SIM_OK) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_SIMCARD);
     }
     break;
 
   case SIM_STATE_CHECK_SIMCARD:
     SIM_Debug("Checking SIM Card....");
     if (SIM_CheckSIMCard(hsim) == SIM_OK) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_NETWORK);
       SIM_Debug("SIM card OK");
     } else {
       SIM_Debug("SIM card Not Ready");
-      return SIM_ERROR;
+      break;
     }
     break;
 
@@ -148,23 +168,54 @@ static SIM_Status_t checkState(SIM_HandlerTypeDef *hsim)
     }
     else if (hsim->network_status == 2) {
       SIM_Debug("Searching network....");
-      return SIM_ERROR;
+      break;
+    }
+    break;
+
+  case SIM_STATE_ACTIVE:
+    hsim->rtos.eventSet(SIM_RTOS_EVT_ACTIVED);
+    break;
+
+  default: break;
+  }
+}
+
+static void loop(SIM_HandlerTypeDef* hsim)
+{
+  switch (hsim->state) {
+  case SIM_STATE_NON_ACTIVE:
+    if (SIM_IsTimeout(hsim, hsim->tick.init, 30000)) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_AT);
+    }
+    break;
+
+  case SIM_STATE_CHECK_AT:
+    if (SIM_IsTimeout(hsim, hsim->tick.changedState, 1000)) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_SIMCARD);
+    }
+    break;
+
+  case SIM_STATE_CHECK_SIMCARD:
+    if (SIM_IsTimeout(hsim, hsim->tick.changedState, 2000)) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_SIMCARD);
+    }
+    break;
+
+  case SIM_STATE_CHECK_NETWORK:
+    if (SIM_IsTimeout(hsim, hsim->tick.changedState, 3000)) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_NETWORK);
+    }
+    break;
+
+  case SIM_STATE_ACTIVE:
+    if (SIM_IsTimeout(hsim, hsim->tick.checksignal, 3000)) {
+      hsim->tick.checksignal = hsim->getTick();
+      SIM_CheckSugnal(hsim);
     }
     break;
 
   default: break;
   }
-
-  if (hsim->state != hsim->setState) {
-    hsim->rtos.eventSet(SIM_RTOS_EVT_NEW_STATE);
-    return SIM_ERROR;
-  }
-
-  if (hsim->state == SIM_STATE_ACTIVE) {
-    hsim->rtos.eventSet(SIM_RTOS_EVT_ACTIVED);
-  }
-
-  return SIM_OK;
 }
 
 static void onReady(void *app, AT_Data_t *_)
@@ -175,5 +226,5 @@ static void onReady(void *app, AT_Data_t *_)
   hsim->events  = 0;
   SIM_Debug("Starting...");
 
-  SIM_SetState(app, SIM_STATE_ACTIVE);
+  SIM_SetState(hsim, SIM_STATE_CHECK_AT);
 }

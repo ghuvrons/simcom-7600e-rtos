@@ -30,8 +30,7 @@ typedef struct {
   uint8_t status;
   uint8_t state;
   uint8_t events;
-
-  uint8_t setState;
+  uint32_t stateTick;
 
   struct {
     char *APN;
@@ -52,8 +51,9 @@ SIM_Status_t SIM_NET_Init(SIM_NET_HandlerTypeDef*, void *hsim);
 void         SIM_NET_SetupAPN(SIM_NET_HandlerTypeDef*, char *APN, char *user, char *pass);
 
 void         SIM_NET_SetState(SIM_NET_HandlerTypeDef*, uint8_t newState);
-SIM_Status_t SIM_NET_CheckState(SIM_NET_HandlerTypeDef*);
+void         SIM_NET_OnNewState(SIM_NET_HandlerTypeDef*);
+void         SIM_NET_Loop(SIM_NET_HandlerTypeDef*);
 SIM_Status_t SIM_NET_GPRS_Check(SIM_NET_HandlerTypeDef*);
-SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef*, char *APN, char *user, char *pass);
+SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef*);
 
 #endif /* SIMCOM_7600E_NET_H_ */
