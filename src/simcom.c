@@ -47,10 +47,21 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
 
   hsim->key = SIM_KEY;
 
+#if SIM_EN_FEATURE_NET
   SIM_NET_Init(&hsim->net, hsim);
+#endif /* SIM_EN_FEATURE_NET */
+
+#if SIM_EN_FEATURE_NTP
   SIM_NTP_Init(&hsim->ntp, hsim);
+#endif /* SIM_EN_FEATURE_NTP */
+
+#if SIM_EN_FEATURE_SOCKET
   SIM_SockManager_Init(&hsim->socketManager, hsim);
+#endif /* SIM_EN_FEATURE_SOCKET */
+
+#if SIM_EN_FEATURE_GPS
   SIM_GPS_Init(&hsim->gps, hsim);
+#endif /* SIM_EN_FEATURE_GPS */
 
   hsim->tick.init = hsim->getTick();
 

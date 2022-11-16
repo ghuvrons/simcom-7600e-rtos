@@ -5,6 +5,8 @@
  *      Author: janoko
  */
 
+#if SIM_EN_FEATURE_NTP
+
 #include "../include/simcom/ntp.h"
 #include "../include/simcom.h"
 #include "../include/simcom/core.h"
@@ -119,3 +121,4 @@ static void onSynced(void *app, AT_Data_t *_)
   hsim->rtos.eventSet(SIM_RTOS_EVT_NTP_SYNCED);
 }
 
+#endif /* SIM_EN_FEATURE_NTP */

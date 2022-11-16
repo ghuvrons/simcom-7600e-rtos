@@ -7,9 +7,10 @@
 
 #ifndef SIMCOM_7600E_GPS_H_
 #define SIMCOM_7600E_GPS_H_
+#if SIM_EN_FEATURE_GPS
 
-#include "lwgps/lwgps.h"
 #include "types.h"
+#include <lwgps/lwgps.h>
 
 #ifndef SIM_GPS_TMP_BUF_SIZE
 #define SIM_GPS_TMP_BUF_SIZE 128
@@ -83,4 +84,5 @@ SIM_Status_t SIM_GPS_SetupConfiguration(SIM_GPS_HandlerTypeDef*, SIM_GPS_Config_
 void         SIM_GPS_Loop(SIM_GPS_HandlerTypeDef*);
 SIM_Status_t SIM_GPS_Activate(SIM_GPS_HandlerTypeDef*);
 
+#endif /* SIM_EN_FEATURE_GPS */
 #endif /* SIMCOM_7600E_GPS_H_ */

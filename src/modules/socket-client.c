@@ -5,6 +5,8 @@
  *      Author: janoko
  */
 
+#if SIM_EN_FEATURE_SOCKET
+
 #include "../include/simcom/socket-client.h"
 #include "../include/simcom.h"
 #include "../include/simcom/socket.h"
@@ -260,3 +262,5 @@ static SIM_Status_t sockClose(SIM_SocketClient_t *sock)
   return SIM_OK;
 }
 
+
+#endif /* SIM_EN_FEATURE_SOCKET */

@@ -7,6 +7,7 @@
 
 #ifndef SIMCOM_7600E_SOCKET_CLIENT_H_
 #define SIMCOM_7600E_SOCKET_CLIENT_H_
+#if SIM_EN_FEATURE_SOCKET
 
 #include "types.h"
 #include "conf.h"
@@ -75,4 +76,6 @@ SIM_Status_t  SIM_SockClient_Open(SIM_SocketClient_t*, void*);
 SIM_Status_t  SIM_SockClient_Close(SIM_SocketClient_t*);
 uint16_t      SIM_SockClient_SendData(SIM_SocketClient_t*, uint8_t *data, uint16_t length);
 
+
+#endif /* SIM_EN_FEATURE_SOCKET */
 #endif /* SIMCOM_7600E_SOCKET_CLIENT_H_ */

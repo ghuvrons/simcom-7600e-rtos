@@ -5,6 +5,8 @@
  *      Author: janoko
  */
 
+#if SIM_EN_FEATURE_GPS
+
 #include "../include/simcom/gps.h"
 #include "../include/simcom.h"
 #include "../events.h"
@@ -162,3 +164,5 @@ static void onGetNMEA(void *app, uint8_t *data, uint16_t len)
 
   lwgps_process(&hsim->gps.lwgps, data, len);
 }
+
+#endif /* SIM_EN_FEATURE_GPS */

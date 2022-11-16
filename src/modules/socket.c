@@ -5,6 +5,7 @@
  *      Author: janoko
  */
 
+#if SIM_EN_FEATURE_SOCKET
 
 #include "../include/simcom.h"
 #include "../include/simcom/socket.h"
@@ -249,3 +250,6 @@ static struct AT_BufferReadTo onSocketReceived(void *app, AT_Data_t *resp)
   returnBuf.length = length;
   return returnBuf;
 }
+
+
+#endif /* SIM_EN_FEATURE_SOCKET */

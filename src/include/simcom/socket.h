@@ -7,6 +7,7 @@
 
 #ifndef SIMCOM_7600E_SOCKET_H_
 #define SIMCOM_7600E_SOCKET_H_
+#if SIM_EN_FEATURE_SOCKET
 
 #include "types.h"
 #include "conf.h"
@@ -40,4 +41,5 @@ SIM_Status_t SIM_SockManager_CheckNetOpen(SIM_Socket_HandlerTypeDef*);
 SIM_Status_t SIM_SockManager_NetOpen(SIM_Socket_HandlerTypeDef*);
 
 
+#endif /* SIM_EN_FEATURE_SOCKET */
 #endif /* SIMCOM_7600E_SOCKET_H_ */

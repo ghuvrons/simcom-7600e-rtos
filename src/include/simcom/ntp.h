@@ -7,6 +7,7 @@
 
 #ifndef SIMCOM_7600E_NTP_H_
 #define SIMCOM_7600E_NTP_H_
+#if SIM_EN_FEATURE_NTP
 
 #include "types.h"
 #include "conf.h"
@@ -35,4 +36,6 @@ SIM_Status_t SIM_NTP_Loop(SIM_NTP_HandlerTypeDef*);
 SIM_Status_t SIM_NTP_SetServer(SIM_NTP_HandlerTypeDef*);
 SIM_Status_t SIM_NTP_OnSynced(SIM_NTP_HandlerTypeDef*);
 
+
+#endif /* SIM_EN_FEATURE_NTP */
 #endif /* SIMCOM_7600E_NTP_H_ */
