@@ -50,6 +50,7 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
   SIM_NET_Init(&hsim->net, hsim);
   SIM_NTP_Init(&hsim->ntp, hsim);
   SIM_SockManager_Init(&hsim->socketManager, hsim);
+  SIM_GPS_Init(&hsim->gps, hsim);
 
   hsim->tick.init = hsim->getTick();
 
@@ -75,6 +76,10 @@ void SIM_Thread_Run(SIM_HandlerTypeDef *hsim)
 #if SIM_EN_FEATURE_NET
         SIM_NET_SetState(&hsim->net, SIM_NET_STATE_CHECK_GPRS);
 #endif /* SIM_EN_FEATURE_NET */
+
+#if SIM_EN_FEATURE_GPS
+        SIM_GPS_SetState(&hsim->gps, SIM_GPS_STATE_SETUP);
+#endif /* SIM_EN_FEATURE_GPS */
       }
 
 #if SIM_EN_FEATURE_NET
@@ -96,9 +101,16 @@ void SIM_Thread_Run(SIM_HandlerTypeDef *hsim)
       if (IS_EVENT(notifEvent, SIM_RTOS_EVT_NTP_SYNCED)) {
         SIM_NTP_OnSynced(&hsim->ntp);
       }
+#endif /* SIM_EN_FEATURE_NTP */
+
+#if SIM_EN_FEATURE_GPS
+      if (IS_EVENT(notifEvent, SIM_RTOS_EVT_GPS_NEW_STATE)) {
+        SIM_GPS_OnNewState(&hsim->gps);
+      }
+#endif /* SIM_EN_FEATURE_GPS */
+
       goto next;
     }
-#endif /* SIM_EN_FEATURE_NTP */
 
     lastTO = hsim->getTick();
     loop(hsim);
