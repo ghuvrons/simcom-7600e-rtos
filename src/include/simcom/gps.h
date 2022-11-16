@@ -7,6 +7,8 @@
 
 #ifndef SIMCOM_7600E_GPS_H_
 #define SIMCOM_7600E_GPS_H_
+
+#include "conf.h"
 #if SIM_EN_FEATURE_GPS
 
 #include "types.h"

@@ -7,10 +7,11 @@
 
 #ifndef SIMCOM_7600E_SOCKET_CLIENT_H_
 #define SIMCOM_7600E_SOCKET_CLIENT_H_
+
+#include "conf.h"
 #if SIM_EN_FEATURE_SOCKET
 
 #include "types.h"
-#include "conf.h"
 
 #define SIM_SOCK_UDP    0
 #define SIM_SOCK_TCPIP  1

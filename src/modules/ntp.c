@@ -5,9 +5,9 @@
  *      Author: janoko
  */
 
+#include "../include/simcom/ntp.h"
 #if SIM_EN_FEATURE_NTP
 
-#include "../include/simcom/ntp.h"
 #include "../include/simcom.h"
 #include "../include/simcom/core.h"
 #include "../include/simcom/net.h"

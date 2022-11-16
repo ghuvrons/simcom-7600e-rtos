@@ -8,8 +8,10 @@
 #ifndef SIMCOM_7600E_NET_H_
 #define SIMCOM_7600E_NET_H_
 
-#include "types.h"
 #include "conf.h"
+#if SIM_EN_FEATURE_NET
+
+#include "types.h"
 
 
 #define SIM_NET_STATUS_APN_WAS_SET      0x08
@@ -56,4 +58,5 @@ void         SIM_NET_Loop(SIM_NET_HandlerTypeDef*);
 SIM_Status_t SIM_NET_GPRS_Check(SIM_NET_HandlerTypeDef*);
 SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef*);
 
+#endif /* SIM_EN_FEATURE_NET */
 #endif /* SIMCOM_7600E_NET_H_ */

@@ -7,10 +7,11 @@
 
 #ifndef SIMCOM_7600E_NTP_H_
 #define SIMCOM_7600E_NTP_H_
+
+#include "conf.h"
 #if SIM_EN_FEATURE_NTP
 
 #include "types.h"
-#include "conf.h"
 
 #define SIM_NTP_SERVER_WAS_SET 0x01
 #define SIM_NTP_WAS_SYNCED     0x02

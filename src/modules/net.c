@@ -5,9 +5,11 @@
  *      Author: janoko
  */
 
+#include "../include/simcom/net.h"
+#if SIM_EN_FEATURE_NET
+
 #include "../events.h"
 #include "../include/simcom.h"
-#include "../include/simcom/net.h"
 #include "../include/simcom/utils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -186,3 +188,6 @@ SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet)
 endCmd:
   return status;
 }
+
+
+#endif /* SIM_EN_FEATURE_NET */

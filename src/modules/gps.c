@@ -5,9 +5,9 @@
  *      Author: janoko
  */
 
+#include "../include/simcom/gps.h"
 #if SIM_EN_FEATURE_GPS
 
-#include "../include/simcom/gps.h"
 #include "../include/simcom.h"
 #include "../events.h"
 #include <stdlib.h>

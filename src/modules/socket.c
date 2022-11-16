@@ -5,10 +5,10 @@
  *      Author: janoko
  */
 
+#include "../include/simcom/socket.h"
 #if SIM_EN_FEATURE_SOCKET
 
 #include "../include/simcom.h"
-#include "../include/simcom/socket.h"
 #include "../include/simcom/net.h"
 #include "../include/simcom/utils.h"
 #include "../events.h"

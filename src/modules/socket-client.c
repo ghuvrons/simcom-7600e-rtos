@@ -5,9 +5,9 @@
  *      Author: janoko
  */
 
+#include "../include/simcom/socket-client.h"
 #if SIM_EN_FEATURE_SOCKET
 
-#include "../include/simcom/socket-client.h"
 #include "../include/simcom.h"
 #include "../include/simcom/socket.h"
 #include "../include/simcom/utils.h"
