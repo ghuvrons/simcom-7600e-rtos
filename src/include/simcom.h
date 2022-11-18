@@ -6,6 +6,7 @@
 #include "simcom/debug.h"
 #include "simcom/net.h"
 #include "simcom/ntp.h"
+#include "simcom/http.h"
 #include "simcom/gps.h"
 #include "simcom/socket.h"
 #include <at-command.h>
@@ -76,12 +77,7 @@ typedef struct SIM_HandlerTypeDef {
   #endif
 
   #if SIM_EN_FEATURE_HTTP
-  struct {
-    uint8_t status;
-    uint8_t events;
-    void *request;
-    void *response;
-  } http;
+  SIM_HTTP_HandlerTypeDef http;
   #endif
 
   #if SIM_EN_FEATURE_GPS

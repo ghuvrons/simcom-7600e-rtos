@@ -48,13 +48,15 @@ SIM_Status_t SIM_Echo(SIM_HandlerTypeDef *hsim, uint8_t onoff)
 SIM_Status_t SIM_CheckSIMCard(SIM_HandlerTypeDef *hsim)
 {
   SIM_Status_t status = SIM_ERROR;
-  char respstr[6];
-  AT_Data_t respData = AT_String(respstr, sizeof(respstr));
+  uint8_t respstr[6];
+  AT_Data_t respData[1] = {
+    AT_Buffer(respstr, sizeof(respstr)),
+  };
 
   memset(respstr, 0, 6);
 
-  AT_Check(&hsim->atCmd, "+CPIN", 1, &respData);
-  if (strncmp(respData.value.string, "READY", 5) == 0) {
+  AT_Check(&hsim->atCmd, "+CPIN", 1, respData);
+  if (strncmp(respData[0].value.string, "READY", 5) == 0) {
     status = SIM_OK;
   }
   return status;
@@ -106,11 +108,11 @@ SIM_Status_t SIM_ReqisterNetwork(SIM_HandlerTypeDef *hsim)
   AT_Data_t paramData[1] = {
       AT_Number(0),
   };
-  char respstr[32];
+  uint8_t respstr[32];
   AT_Data_t respData[4] = {
     AT_Number(0),
     AT_Number(0),
-    AT_String(respstr, sizeof(32)),
+    AT_Buffer(respstr, 32),
     AT_Number(0),
   };
 
@@ -137,9 +139,9 @@ endCmd:
 
 SIM_Status_t SIM_GetTime(SIM_HandlerTypeDef *hsim, SIM_Datetime_t *dt)
 {
-  char respstr[24];
+  uint8_t respstr[24];
   AT_Data_t respData[1] = {
-    AT_String(respstr, 24),
+    AT_Buffer(respstr, 24),
   };
   memset(respstr, 0, 24);
 

@@ -235,7 +235,7 @@ static void onSocketClosed(void *app, AT_Data_t *resp)
 static struct AT_BufferReadTo onSocketReceived(void *app, AT_Data_t *resp)
 {
   struct AT_BufferReadTo returnBuf = {
-      .buffer = 0, .length = 0,
+      .buffer = 0, .bufferSize = 0, .readLen = 0,
   };
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
   uint8_t linkNum = resp->value.number;
@@ -247,7 +247,8 @@ static struct AT_BufferReadTo onSocketReceived(void *app, AT_Data_t *resp)
   if (sock != 0) {
     returnBuf.buffer = sock->buffer;
   }
-  returnBuf.length = length;
+  returnBuf.bufferSize = length;
+  returnBuf.readLen = length;
   return returnBuf;
 }
 

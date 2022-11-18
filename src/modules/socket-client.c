@@ -199,8 +199,8 @@ static SIM_Status_t sockOpen(SIM_SocketClient_t *sock)
 
   AT_Data_t paramData[4] = {
       AT_Number(sock->linkNum),
-      AT_String("TCP", 3),
-      AT_String(sock->host, strlen(sock->host)),
+      AT_String("TCP"),
+      AT_String(sock->host),
       AT_Number(sock->port),
   };
 

@@ -116,7 +116,7 @@ static SIM_Status_t setConfiguration(SIM_GPS_HandlerTypeDef *hsimGps)
   if (AT_Command(&hsim->atCmd, "+CGPSMD", 1, paramData, 0, 0) != AT_OK) goto endCmd;
 
   if (hsimGps->config.agpsServer != 0) {
-    AT_DataSetString(&paramData[0], hsimGps->config.agpsServer, strlen(hsimGps->config.agpsServer));
+    AT_DataSetString(&paramData[0], hsimGps->config.agpsServer);
     if (AT_Command(&hsim->atCmd, "+CGPSURL", 1, paramData, 0, 0) != AT_OK) goto endCmd;
 
     AT_DataSetNumber(&paramData[0], hsimGps->config.isAgpsServerSecure? 1:0);
@@ -159,8 +159,6 @@ static void onGetNMEA(void *app, uint8_t *data, uint16_t len)
 {
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
   *(data+len) = 0;
-
-  SIM_Debug((const char*)data);
 
   lwgps_process(&hsim->gps.lwgps, data, len);
 }

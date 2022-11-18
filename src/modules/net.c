@@ -159,9 +159,9 @@ SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet)
   uint8_t cid = 1;
   AT_Data_t paramData[4] = {
     AT_Number(cid),
-    AT_String("IP", 2),
-    AT_String(APN, strlen(APN)),
-    AT_String(0, 0),
+    AT_String("IP"),
+    AT_String(APN),
+    AT_String(""),
   };
 
   if (AT_Command(&hsim->atCmd, "+CGDCONT", 3, paramData, 0, 0) != AT_OK) goto endCmd;
@@ -172,8 +172,8 @@ SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet)
   }
   else {
     AT_DataSetNumber(&paramData[1], 3);
-    AT_DataSetString(&paramData[2], user, strlen(user));
-    AT_DataSetString(&paramData[3], pass, strlen(pass));
+    AT_DataSetString(&paramData[2], user);
+    AT_DataSetString(&paramData[3], pass);
 
     if (pass == NULL) {
       if (AT_Command(&hsim->atCmd, "+CGAUTH", 3, paramData, 0, 0) != AT_OK) goto endCmd;

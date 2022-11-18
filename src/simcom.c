@@ -63,6 +63,10 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
   SIM_GPS_Init(&hsim->gps, hsim);
 #endif /* SIM_EN_FEATURE_GPS */
 
+#if SIM_EN_FEATURE_HTTP
+  SIM_HTTP_Init(&hsim->http, hsim);
+#endif /* SIM_EN_FEATURE_GPS */
+
   hsim->tick.init = hsim->getTick();
 
   return SIM_OK;

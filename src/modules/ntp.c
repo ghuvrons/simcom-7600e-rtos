@@ -75,7 +75,7 @@ SIM_Status_t SIM_NTP_SetServer(SIM_NTP_HandlerTypeDef *hsimntp)
 
   SIM_HandlerTypeDef *hsim = hsimntp->hsim;
   AT_Data_t paramData[2] = {
-    AT_String(hsimntp->server, strlen(hsimntp->server)),
+    AT_String(hsimntp->server),
     AT_Number(hsimntp->region),
   };
 
