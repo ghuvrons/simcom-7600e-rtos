@@ -36,6 +36,10 @@
 #define SIM_NUM_OF_SOCKET  10
 #endif
 
+#ifndef SIM_EN_FEATURE_FILE
+#define SIM_EN_FEATURE_FILE SIM_EN_FEATURE_HTTP
+#endif
+
 #ifndef SIM_DEBUG
 #define SIM_DEBUG 1
 #endif
