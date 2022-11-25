@@ -24,8 +24,10 @@ enum {
 };
 
 typedef struct {
-  char* url;
-  uint8_t method;
+  char*         url;
+  uint8_t       method;
+  const uint8_t *httpData;       // header + content
+  uint16_t      httpDataLength;
 } SIM_HTTP_Request_t;
 
 typedef struct {
@@ -60,6 +62,11 @@ typedef struct {
 
 SIM_Status_t SIM_HTTP_Init(SIM_HTTP_HandlerTypeDef*, void *hsim);
 SIM_Status_t SIM_HTTP_Get(SIM_HTTP_HandlerTypeDef*, char *url, SIM_HTTP_Response_t*, uint32_t timeout);
-
+SIM_Status_t SIM_HTTP_SendRequest(SIM_HTTP_HandlerTypeDef *hsimHttp, char *url,
+                                  uint8_t method,
+                                  const uint8_t *httpRequest,
+                                  uint16_t httpRequestLength,
+                                  SIM_HTTP_Response_t *resp,
+                                  uint32_t timeout);
 #endif /* SIM_EN_FEATURE_HTTP */
 #endif /* SIMCOM_7600E_HTTP_H_ */

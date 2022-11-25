@@ -8,6 +8,7 @@
 #include "simcom/ntp.h"
 #include "simcom/http.h"
 #include "simcom/gps.h"
+#include "simcom/file.h"
 #include "simcom/socket.h"
 #include <at-command.h>
 
@@ -82,6 +83,10 @@ typedef struct SIM_HandlerTypeDef {
 
   #if SIM_EN_FEATURE_GPS
   SIM_GPS_HandlerTypeDef gps;
+  #endif
+
+  #if SIM_EN_FEATURE_FILE
+  SIM_FILE_HandlerTypeDef file;
   #endif
 
   // Buffers

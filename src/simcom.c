@@ -7,7 +7,6 @@
 
 #include "include/simcom.h"
 #include "include/simcom/core.h"
-#include "include/simcom/net.h"
 #include "include/simcom/utils.h"
 #include "events.h"
 #include <stdlib.h>
@@ -59,12 +58,17 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
   SIM_SockManager_Init(&hsim->socketManager, hsim);
 #endif /* SIM_EN_FEATURE_SOCKET */
 
+
+#if SIM_EN_FEATURE_HTTP
+  SIM_HTTP_Init(&hsim->http, hsim);
+#endif /* SIM_EN_FEATURE_GPS */
+
 #if SIM_EN_FEATURE_GPS
   SIM_GPS_Init(&hsim->gps, hsim);
 #endif /* SIM_EN_FEATURE_GPS */
 
-#if SIM_EN_FEATURE_HTTP
-  SIM_HTTP_Init(&hsim->http, hsim);
+#if SIM_EN_FEATURE_FILE
+  SIM_FILE_Init(&hsim->file, hsim);
 #endif /* SIM_EN_FEATURE_GPS */
 
   hsim->tick.init = hsim->getTick();
