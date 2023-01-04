@@ -29,7 +29,8 @@ SIM_Status_t SIM_FILE_ListDir(SIM_FILE_HandlerTypeDef*, const char *dir);
 SIM_Status_t SIM_FILE_MemoryInfo(SIM_FILE_HandlerTypeDef*);
 
 SIM_Status_t SIM_FILE_IsFileExist(SIM_FILE_HandlerTypeDef*, const char *filepath);
-SIM_Status_t SIM_FILE_CreateAndWriteFile(SIM_FILE_HandlerTypeDef*, const char *filepath, uint8_t* data, uint16_t len);
+SIM_Status_t SIM_FILE_CreateAndWriteFile(SIM_FILE_HandlerTypeDef*, const char *filepath,
+                                         const uint8_t* data, uint16_t len);
 SIM_Status_t SIM_FILE_CopyFile(SIM_FILE_HandlerTypeDef*, const char *filepath1, const char *filepath2);
 SIM_Status_t SIM_FILE_RenameFile(SIM_FILE_HandlerTypeDef*, const char *filepath, const char *newName);
 SIM_Status_t SIM_FILE_RemoveFile(SIM_FILE_HandlerTypeDef*, const char *filepath);

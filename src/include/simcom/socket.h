@@ -28,6 +28,7 @@ typedef struct SIM_Socket_HandlerTypeDef {
   void                *hsim;
   uint8_t             state;
   uint32_t            stateTick;
+  uint8_t             isAutoOpen;
   uint8_t             socketsNb;
   SIM_SocketClient_t  *sockets[SIM_NUM_OF_SOCKET];
 } SIM_Socket_HandlerTypeDef;

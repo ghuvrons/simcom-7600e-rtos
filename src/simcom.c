@@ -38,7 +38,8 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
   hsim->atCmd.rtos.eventClear   = hsim->rtos.eventClear;
 
   AT_Config_t config;
-  config.timeout = 30000; // ms
+  config.commandTimeout = 30000; // ms
+  config.checkTimeout = 100; // ms
 
   if (AT_Init(&hsim->atCmd, &config) != AT_OK) return SIM_ERROR;
 

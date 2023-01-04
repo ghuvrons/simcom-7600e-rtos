@@ -132,6 +132,7 @@ SIM_Status_t SIM_ReqisterNetwork(SIM_HandlerTypeDef *hsim)
     if (AT_Command(&hsim->atCmd, "+COPS", 0, 0, 0, 0) != AT_OK) goto endCmd;
   }
 
+
 endCmd:
   return status;
 }

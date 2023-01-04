@@ -133,6 +133,7 @@ SIM_Status_t SIM_SockClient_Open(SIM_SocketClient_t *sock, void *hsim)
   sock->socketManager = &((SIM_HandlerTypeDef*)hsim)->socketManager;
 
   if (sock->config.autoReconnect) {
+    sock->socketManager->isAutoOpen = 1;
     Get_Available_LinkNum(sock->socketManager, &(sock->linkNum));
     if (sock->linkNum < 0) return SIM_ERROR;
     sock->socketManager->sockets[sock->linkNum] = sock;
@@ -161,7 +162,7 @@ SIM_Status_t SIM_SockClient_Close(SIM_SocketClient_t *sock)
   if (AT_Command(&hsim->atCmd, "+CIPCLOSE", 1, paramData, 0, 0) != AT_OK) {
     return SIM_ERROR;
   }
-  return SIM_ERROR;
+  return SIM_OK;
 }
 
 
@@ -176,7 +177,7 @@ uint16_t SIM_SockClient_SendData(SIM_SocketClient_t *sock, uint8_t *data, uint16
       AT_Number(length),
   };
 
-  if (AT_CommandWrite(&hsim->atCmd, "+CIPSEND", ">",
+  if (AT_CommandWrite(&hsim->atCmd, "+CIPSEND", ">", NULL,
                       data, length,
                       2, paramData, 0, 0) != AT_OK)
   {

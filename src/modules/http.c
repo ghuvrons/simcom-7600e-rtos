@@ -77,8 +77,8 @@ SIM_Status_t SIM_HTTP_Get(SIM_HTTP_HandlerTypeDef *hsimHttp,
 
   req.url     = url;
   req.method  = 0;
-  req.httpData = "Test";
-  req.httpDataLength = strlen(req.httpData);
+  req.httpData = (const uint8_t*) "Test";
+  req.httpDataLength = (uint16_t)strlen((const char*)req.httpData);
   SIM_FILE_MemoryInfo(&hsim->file);
 
   return request(hsimHttp, &req, resp, timeout);
@@ -248,18 +248,15 @@ static struct AT_BufferReadTo onReadHead(void *app, AT_Data_t *data)
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
   struct AT_BufferReadTo returnBuf = {
       .buffer = 0,
-      .bufferSize = 0,
       .readLen = 0,
   };
-
-  const char *flag = data->value.string;
 
   data++;
   returnBuf.readLen = data->value.number;
 
   if (hsim->http.response != 0) {
     returnBuf.buffer = hsim->http.response->headBuffer;
-    returnBuf.bufferSize = hsim->http.response->headBufferSize;
+    returnBuf.readLen = hsim->http.response->headBufferSize;
   }
 
   return returnBuf;
@@ -270,11 +267,10 @@ static struct AT_BufferReadTo onReadData(void *app, AT_Data_t *resp)
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
   struct AT_BufferReadTo returnBuf = {
       .buffer = 0,
-      .bufferSize = 0,
       .readLen = 0,
   };
 
-  char *flag = resp->value.string;
+  const char *flag = resp->value.string;
 
   if (resp->type == AT_NUMBER && resp->value.number == 0)
   {
@@ -289,7 +285,7 @@ static struct AT_BufferReadTo onReadData(void *app, AT_Data_t *resp)
 
     if (hsim->http.response != 0) {
       returnBuf.buffer = hsim->http.response->contentBuffer;
-      returnBuf.bufferSize = hsim->http.response->contentBufferSize;
+      returnBuf.readLen = hsim->http.response->contentBufferSize;
     }
   }
 

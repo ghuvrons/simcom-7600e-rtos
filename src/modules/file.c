@@ -105,7 +105,7 @@ SIM_Status_t SIM_FILE_IsFileExist(SIM_FILE_HandlerTypeDef *hsimFile, const char 
 
 SIM_Status_t SIM_FILE_CreateAndWriteFile(SIM_FILE_HandlerTypeDef *hsimFile,
                                          const char *filepath,
-                                         uint8_t* data, uint16_t len)
+                                         const uint8_t* data, uint16_t len)
 {
   SIM_HandlerTypeDef  *hsim       = hsimFile->hsim;
 
@@ -114,7 +114,7 @@ SIM_Status_t SIM_FILE_CreateAndWriteFile(SIM_FILE_HandlerTypeDef *hsimFile,
       AT_Number(len),
   };
 
-  if (AT_CommandWrite(&hsim->atCmd, "+CFTRANRX", ">",
+  if (AT_CommandWrite(&hsim->atCmd, "+CFTRANRX", ">", NULL,
                       data, len,
                       2, paramData, 0, 0) != AT_OK)
   {

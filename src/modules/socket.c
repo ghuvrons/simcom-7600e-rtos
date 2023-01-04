@@ -17,6 +17,7 @@
 
 static SIM_Status_t netOpen(SIM_Socket_HandlerTypeDef *hsimSockMgr);
 static void onNetOpened(void *app, AT_Data_t*);
+static void onNetClosed(void *app, AT_Data_t*);
 static void onSocketOpened(void *app, AT_Data_t*);
 static void onSocketClosedByCmd(void *app, AT_Data_t*);
 static void onSocketClosed(void *app, AT_Data_t*);
@@ -31,10 +32,16 @@ SIM_Status_t SIM_SockManager_Init(SIM_Socket_HandlerTypeDef *hsimSockMgr, void *
   hsimSockMgr->hsim = hsim;
   hsimSockMgr->state = SIM_SOCKMGR_STATE_NET_CLOSE;
   hsimSockMgr->stateTick = 0;
+  hsimSockMgr->isAutoOpen = 0;
 
   AT_Data_t *netOpenResp = malloc(sizeof(AT_Data_t));
   AT_On(&((SIM_HandlerTypeDef*)hsim)->atCmd, "+NETOPEN",
         (SIM_HandlerTypeDef*) hsim, 1, netOpenResp, onNetOpened);
+
+  AT_Data_t *netCloseResp = malloc(sizeof(AT_Data_t));
+  memset(netCloseResp, 0, sizeof(AT_Data_t));
+  AT_On(&((SIM_HandlerTypeDef*)hsim)->atCmd, "+CIPEVENT",
+        (SIM_HandlerTypeDef*) hsim, 1, netCloseResp, onNetClosed);
 
 
   AT_Data_t *socketOpenResp = malloc(sizeof(AT_Data_t)*2);
@@ -96,6 +103,11 @@ void SIM_SockManager_Loop(SIM_Socket_HandlerTypeDef *hsimSockMgr)
 
   switch (hsimSockMgr->state) {
   case SIM_SOCKMGR_STATE_NET_CLOSE:
+    if (hsimSockMgr->isAutoOpen
+        && SIM_IsTimeout(hsim, hsimSockMgr->stateTick, 1000))
+    {
+      SIM_SockManager_SetState(&hsim->socketManager, SIM_SOCKMGR_STATE_NET_OPENING);
+    }
     break;
 
   case SIM_SOCKMGR_STATE_NET_OPENING:
@@ -180,6 +192,22 @@ static void onNetOpened(void *app, AT_Data_t *resp)
   }
 }
 
+
+static void onNetClosed(void *app, AT_Data_t *resp)
+{
+  SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
+  SIM_SocketClient_t *sock;
+
+  for (uint8_t linkNum = 0; linkNum < SIM_NUM_OF_SOCKET; linkNum++) {
+    sock = hsim->socketManager.sockets[linkNum];
+    if (sock != 0) {
+      SIM_BITS_SET(sock->events, SIM_SOCK_EVENT_ON_CLOSED);
+    }
+  }
+  hsim->rtos.eventSet(SIM_RTOS_EVT_SOCKCLIENT_NEW_EVT);
+  SIM_SockManager_SetState(&hsim->socketManager, SIM_SOCKMGR_STATE_NET_CLOSE);
+}
+
 static void onSocketOpened(void *app, AT_Data_t *resp)
 {
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
@@ -235,7 +263,7 @@ static void onSocketClosed(void *app, AT_Data_t *resp)
 static struct AT_BufferReadTo onSocketReceived(void *app, AT_Data_t *resp)
 {
   struct AT_BufferReadTo returnBuf = {
-      .buffer = 0, .bufferSize = 0, .readLen = 0,
+      .buffer = 0, .readLen = 0,
   };
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
   uint8_t linkNum = resp->value.number;
@@ -247,7 +275,7 @@ static struct AT_BufferReadTo onSocketReceived(void *app, AT_Data_t *resp)
   if (sock != 0) {
     returnBuf.buffer = sock->buffer;
   }
-  returnBuf.bufferSize = length;
+
   returnBuf.readLen = length;
   return returnBuf;
 }
