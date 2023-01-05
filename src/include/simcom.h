@@ -22,6 +22,7 @@ enum {
  SIM_STATE_NON_ACTIVE,
  SIM_STATE_CHECK_AT,
  SIM_STATE_CHECK_SIMCARD,
+ SIM_STATE_REG_NETWORK,
  SIM_STATE_CHECK_NETWORK,
  SIM_STATE_ACTIVE,
 };
@@ -106,4 +107,5 @@ void SIM_Thread_ATCHandler(SIM_HandlerTypeDef*);
 
 void SIM_SetState(SIM_HandlerTypeDef*, uint8_t newState);
 
+void SIM_OnNetworkUpdate(SIM_HandlerTypeDef*);
 #endif /* SIMCOM_7600E_H */

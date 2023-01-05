@@ -16,6 +16,7 @@
 static void onNewState(SIM_HandlerTypeDef*);
 static void loop(SIM_HandlerTypeDef*);
 static void onReady(void *app, AT_Data_t*);
+static void onNetworkUpdateReport(void *app, AT_Data_t*);
 
 
 SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
@@ -42,10 +43,13 @@ SIM_Status_t SIM_Init(SIM_HandlerTypeDef *hsim)
   config.checkTimeout = 100; // ms
 
   if (AT_Init(&hsim->atCmd, &config) != AT_OK) return SIM_ERROR;
+  hsim->key = SIM_KEY;
 
   AT_On(&hsim->atCmd, "RDY", hsim, 0, 0, onReady);
 
-  hsim->key = SIM_KEY;
+  AT_Data_t *networkUpdateResp = malloc(sizeof(AT_Data_t));
+  AT_On(&hsim->atCmd, "+CREG", hsim, 1, networkUpdateResp, onNetworkUpdateReport);
+
 
 #if SIM_EN_FEATURE_NET
   SIM_NET_Init(&hsim->net, hsim);
@@ -189,18 +193,13 @@ static void onNewState(SIM_HandlerTypeDef *hsim)
     }
     break;
 
+  case SIM_STATE_REG_NETWORK:
+    SIM_ReqisterNetwork(hsim);
+    break;
+
   case SIM_STATE_CHECK_NETWORK:
     SIM_Debug("Checking cellular network....");
     if (SIM_CheckNetwork(hsim) == SIM_OK) {
-      SIM_Debug("Cellular network registered", (hsim->network_status == 5)? " (roaming)":"");
-      hsim->rtos.eventSet(SIM_RTOS_EVT_NEW_STATE);
-    }
-    else if (hsim->network_status == 0) {
-      SIM_ReqisterNetwork(hsim);
-    }
-    else if (hsim->network_status == 2) {
-      SIM_Debug("Searching network....");
-      break;
     }
     break;
 
@@ -233,9 +232,10 @@ static void loop(SIM_HandlerTypeDef* hsim)
     }
     break;
 
+  case SIM_STATE_REG_NETWORK:
   case SIM_STATE_CHECK_NETWORK:
-    if (SIM_IsTimeout(hsim, hsim->tick.changedState, 3000)) {
-      SIM_SetState(hsim, SIM_STATE_CHECK_NETWORK);
+    if (SIM_IsTimeout(hsim, hsim->tick.changedState, 10000)) {
+      SIM_SetState(hsim, SIM_STATE_CHECK_SIMCARD);
     }
     break;
 
@@ -250,6 +250,46 @@ static void loop(SIM_HandlerTypeDef* hsim)
   }
 }
 
+
+void SIM_OnNetworkUpdate(SIM_HandlerTypeDef *hsim)
+{
+  if (hsim->network_status == 5) {
+    SIM_SET_STATUS(hsim, SIM_STATUS_ROAMING);
+  }
+  else {
+    SIM_UNSET_STATUS(hsim, SIM_STATUS_ROAMING);
+  }
+
+  if (hsim->network_status == 1 || hsim->network_status == 5) {
+    SIM_Debug("Cellular network registered%s", (hsim->network_status == 5)? " (roaming)":"");
+    if (hsim->state <= SIM_STATE_CHECK_NETWORK) {
+      SIM_SetState(hsim, SIM_STATE_ACTIVE);
+    }
+  }
+  else {
+    if (hsim->network_status == 0) {
+      SIM_SetState(hsim, SIM_STATE_REG_NETWORK);
+    }
+    else {
+      if (hsim->state > SIM_STATE_CHECK_NETWORK) {
+        hsim->state = SIM_STATE_CHECK_NETWORK;
+        hsim->tick.changedState = hsim->getTick();
+      }
+
+      if (hsim->network_status == 2) {
+        SIM_Debug("Searching network....");
+      } else {
+        SIM_Debug("Cellular network not registered. status: %d", (int) hsim->network_status);
+      }
+    }
+
+#if SIM_EN_FEATURE_NET
+    SIM_NET_SetState(&hsim->net, SIM_NET_STATE_NON_ACTIVE);
+#endif /* SIM_EN_FEATURE_NET */
+  }
+}
+
+
 static void onReady(void *app, AT_Data_t *_)
 {
   SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
@@ -259,4 +299,13 @@ static void onReady(void *app, AT_Data_t *_)
   SIM_Debug("Starting...");
 
   SIM_SetState(hsim, SIM_STATE_CHECK_AT);
+}
+
+
+static void onNetworkUpdateReport(void *app, AT_Data_t* resp)
+{
+  SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
+
+  hsim->network_status = (uint8_t) resp->value.number;
+  SIM_OnNetworkUpdate(hsim);
 }

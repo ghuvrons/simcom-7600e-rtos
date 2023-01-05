@@ -15,9 +15,15 @@
 #include <string.h>
 
 
-SIM_Status_t SIM_NET_Init(SIM_NET_HandlerTypeDef *hsimnet, void *hsim)
+static void onGprsUpdateReport(void *app, AT_Data_t*);
+static void onGprsUpdate(SIM_NET_HandlerTypeDef*);
+
+
+SIM_Status_t SIM_NET_Init(SIM_NET_HandlerTypeDef *hsimnet, void *_hsim)
 {
-  if (((SIM_HandlerTypeDef*)hsim)->key != SIM_KEY)
+  SIM_HandlerTypeDef *hsim = _hsim;
+
+  if (hsim->key != SIM_KEY)
     return SIM_ERROR;
 
   hsimnet->hsim         = hsim;
@@ -25,6 +31,10 @@ SIM_Status_t SIM_NET_Init(SIM_NET_HandlerTypeDef *hsimnet, void *hsim)
   hsimnet->events       = 0;
   hsimnet->gprs_status  = 0;
   hsimnet->state        = SIM_NET_STATE_NON_ACTIVE;
+
+
+  AT_Data_t *gprsUpdateResp = malloc(sizeof(AT_Data_t));
+  AT_On(&hsim->atCmd, "+CGREG", hsim, 1, gprsUpdateResp, onGprsUpdateReport);
 
   return SIM_OK;
 }
@@ -74,13 +84,6 @@ void SIM_NET_OnNewState(SIM_NET_HandlerTypeDef *hsimnet)
     }
     SIM_Debug("Checking GPRS...");
     if (SIM_NET_GPRS_Check(hsimnet) == SIM_OK) {
-      SIM_Debug("GPRS registered%s", (hsimnet->gprs_status == 5)? " (roaming)":"");
-    }
-    else if (hsimnet->gprs_status == 0) {
-      SIM_NET_SetState(hsimnet, SIM_NET_STATE_SETUP_APN);
-    }
-    else if (hsim->network_status == 2) {
-      SIM_Debug("GPRS Registering....");
     }
     break;
 
@@ -117,6 +120,10 @@ SIM_Status_t SIM_NET_GPRS_Check(SIM_NET_HandlerTypeDef *hsimnet)
   uint8_t lac[2]; // location area code
   uint8_t ci[2];  // Cell Identify
 
+  AT_Data_t paramData[1] = {
+      AT_Number(1),
+  };
+
   AT_Data_t respData[4] = {
     AT_Number(0),
     AT_Number(0),
@@ -127,23 +134,12 @@ SIM_Status_t SIM_NET_GPRS_Check(SIM_NET_HandlerTypeDef *hsimnet)
   memset(lac, 0, 2);
   memset(ci, 0, 2);
 
+  if (AT_Command(&hsim->atCmd, "+CGREG", 1, paramData, 0, 0) != AT_OK) return status;
+
   if (AT_Check(&hsim->atCmd, "+CGREG", 4, respData) != AT_OK) return status;
   hsimnet->gprs_status = (uint8_t) respData[1].value.number;
 
-  // check response
-  if (hsimnet->gprs_status == 1 || hsimnet->gprs_status == 5) {
-    status = SIM_OK;
-    if (hsimnet->state <= SIM_NET_STATE_CHECK_GPRS) {
-      SIM_NET_SetState(hsimnet, SIM_NET_STATE_ONLINE);
-    }
-    if (hsimnet->gprs_status == 5)
-      SIM_SET_STATUS(hsimnet, SIM_NET_STATUS_GPRS_ROAMING);
-  }
-  else {
-    if (hsimnet->state > SIM_NET_STATE_CHECK_GPRS)
-      hsimnet->state = SIM_NET_STATE_CHECK_GPRS;
-    SIM_UNSET_STATUS(hsimnet, SIM_NET_STATUS_GPRS_ROAMING);
-  }
+  onGprsUpdate(hsimnet);
 
   return status;
 }
@@ -188,6 +184,53 @@ SIM_Status_t SIM_NET_SetAPN(SIM_NET_HandlerTypeDef *hsimnet)
 endCmd:
   return status;
 }
+
+
+static void onGprsUpdateReport(void *app, AT_Data_t* resp)
+{
+  SIM_HandlerTypeDef *hsim = (SIM_HandlerTypeDef*)app;
+
+  hsim->network_status = (uint8_t) resp->value.number;
+  onGprsUpdate(&hsim->net);
+}
+
+
+static void onGprsUpdate(SIM_NET_HandlerTypeDef *hsimnet)
+{
+  SIM_HandlerTypeDef *hsim = hsimnet->hsim;
+
+  if (hsimnet->gprs_status == 5) {
+    SIM_SET_STATUS(hsimnet, SIM_NET_STATUS_GPRS_ROAMING);
+  }
+  else {
+    SIM_UNSET_STATUS(hsimnet, SIM_NET_STATUS_GPRS_ROAMING);
+  }
+
+  if (hsimnet->gprs_status == 1 || hsimnet->gprs_status == 5) {
+    SIM_Debug("GPRS registered%s", (hsimnet->gprs_status == 5)? " (roaming)":"");
+    if (hsimnet->state <= SIM_NET_STATE_CHECK_GPRS) {
+      SIM_NET_SetState(hsimnet, SIM_NET_STATE_ONLINE);
+    }
+  }
+  else {
+    if (hsimnet->gprs_status == 0) {
+      SIM_NET_SetState(hsimnet, SIM_NET_STATE_SETUP_APN);
+    } else {
+      if (hsimnet->state > SIM_NET_STATE_CHECK_GPRS) {
+        hsimnet->state = SIM_NET_STATE_CHECK_GPRS;
+        hsimnet->stateTick = hsim->getTick();
+      }
+
+      if (hsim->network_status == 2) {
+        SIM_Debug("GPRS Registering....");
+      }
+      else {
+        SIM_Debug("GPRS not registered. status: %d", (int) hsimnet->gprs_status == 5);
+      }
+    }
+  }
+}
+
 
 
 #endif /* SIM_EN_FEATURE_NET */

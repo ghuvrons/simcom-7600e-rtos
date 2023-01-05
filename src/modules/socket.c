@@ -24,8 +24,10 @@ static void onSocketClosed(void *app, AT_Data_t*);
 static struct AT_BufferReadTo onSocketReceived(void *app, AT_Data_t*);
 
 
-SIM_Status_t SIM_SockManager_Init(SIM_Socket_HandlerTypeDef *hsimSockMgr, void *hsim)
+SIM_Status_t SIM_SockManager_Init(SIM_Socket_HandlerTypeDef *hsimSockMgr, void *_hsim)
 {
+  SIM_HandlerTypeDef *hsim = _hsim;
+
   if (((SIM_HandlerTypeDef*)hsim)->key != SIM_KEY)
     return SIM_ERROR;
 

@@ -69,6 +69,10 @@ SIM_Status_t SIM_CheckNetwork(SIM_HandlerTypeDef *hsim)
   uint8_t lac[2]; // location area code
   uint8_t ci[2];  // Cell Identify
 
+  AT_Data_t paramData[1] = {
+      AT_Number(1),
+  };
+
   AT_Data_t respData[4] = {
     AT_Number(0),
     AT_Number(0),
@@ -79,23 +83,13 @@ SIM_Status_t SIM_CheckNetwork(SIM_HandlerTypeDef *hsim)
   memset(lac, 0, 2);
   memset(ci, 0, 2);
 
+  if (AT_Command(&hsim->atCmd, "+CREG", 1, paramData, 0, 0) != AT_OK) return status;
+
   if (AT_Check(&hsim->atCmd, "+CREG", 4, respData) != AT_OK) return status;
   hsim->network_status = (uint8_t) respData[1].value.number;
 
-  // check response
-  if (hsim->network_status == 1 || hsim->network_status == 5) {
-    status = SIM_OK;
-    if (hsim->state <= SIM_STATE_CHECK_NETWORK) {
-      SIM_SetState(hsim, SIM_STATE_ACTIVE);
-    }
-    if (hsim->network_status == 5)
-      SIM_SET_STATUS(hsim, SIM_STATUS_ROAMING);
-  }
-  else {
-    if (hsim->state > SIM_STATE_CHECK_NETWORK)
-      hsim->state = SIM_STATE_CHECK_NETWORK;
-    SIM_UNSET_STATUS(hsim, SIM_STATUS_ROAMING);
-  }
+  SIM_OnNetworkUpdate(hsim);
+  status = SIM_OK;
 
   return status;
 }
